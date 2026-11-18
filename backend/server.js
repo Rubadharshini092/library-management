@@ -1,22 +1,53 @@
+
 require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const bookRoutes = require("./routes/bookRoutes");
 
 const app = express();
-app.use(cors({ origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(",") : true }));
+
+// Allow frontend connections (temporary testing configuration)
+app.use(cors({ origin: true }));
+
 app.use(express.json());
 
-app.get("/", (_req, res) => res.json({ message: "Library Management API is running" }));
+// Test API
+app.get("/", (req, res) => {
+  res.json({
+    message: "Library Management API is running"
+  });
+});
+
+// Book routes
 app.use("/api/books", bookRoutes);
 
-app.use((req, res) => res.status(404).json({ message: `Route ${req.method} ${req.originalUrl} not found` }));
-app.use((err, _req, res, _next) => {
+// Invalid routes
+app.use((req, res) => {
+  res.status(404).json({
+    message: `Route ${req.method} ${req.originalUrl} not found`
+  });
+});
+
+// Error handling
+app.use((err, req, res, next) => {
   console.error(err);
-  res.status(err.status || 500).json({ message: err.message || "Server error" });
+  res.status(500).json({
+    message: err.message || "Server error"
+  });
 });
 
 const PORT = process.env.PORT || 5000;
-connectDB().then(() => app.listen(PORT, () => console.log(`Server running on port ${PORT}`)))
-  .catch(err => { console.error("Database connection failed:", err.message); process.exit(1); });
+
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log("MongoDB connected");
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Database connection failed:", err.message);
+    process.exit(1);
+  });
